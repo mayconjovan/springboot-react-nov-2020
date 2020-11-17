@@ -1,15 +1,16 @@
 package com.maycon.sbreact.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.Optional;
 
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
@@ -23,14 +24,33 @@ import com.maycon.sbreact.service.impl.UsuarioServiceImpl;
 @ActiveProfiles("test")
 public class UsuarioServiceTest {
 
-	UsuarioService service;
+	@SpyBean
+	UsuarioServiceImpl service;
 
 	@MockBean
 	UsuarioRepository repository;
 
-	@BeforeEach
-	public void setUp() {
-		service = new UsuarioServiceImpl(repository);
+	@Test
+	@DisplayName("Deve salvar o usuário")
+	public void userSave() {
+		Assertions.assertDoesNotThrow(() -> {
+			// cenario
+			Mockito.doNothing().when(service).validarEmail(Mockito.anyString());
+			Usuario usuario = Usuario.builder().id(1l).nome("nome").email("email@email.com").senha("senha").build();
+			Mockito.when(repository.save(Mockito.any(Usuario.class))).thenReturn(usuario);
+			// acao
+
+			Usuario usuarioSalvo = service.salvarUsuario(new Usuario());
+
+			// verificacao
+
+			assertThat(usuarioSalvo).isNotNull();
+			assertThat(usuarioSalvo.getId()).isEqualTo(1l);
+			assertThat(usuarioSalvo.getNome()).isEqualTo("nome");
+			assertThat(usuarioSalvo.getEmail()).isEqualTo("email@email.com");
+			assertThat(usuarioSalvo.getSenha()).isEqualTo("senha");
+		});
+
 	}
 
 	@Test
@@ -51,6 +71,23 @@ public class UsuarioServiceTest {
 			Assertions.assertNotNull(result);
 		});
 	}
+	
+	@Test
+	@DisplayName("Não deve salvar um usuário com email ja cadastrado")
+	public void dontSaveUserWithContainsEmail() {
+		Assertions.assertThrows(RegraNegocioException.class, ()-> {
+		//cenario
+		String email = "email@email.com";
+		Usuario user = Usuario.builder().email(email).build();
+		Mockito.doThrow(RegraNegocioException.class).when(service).validarEmail(email);
+		
+		//acao
+		service.salvarUsuario(user);
+		
+		//verificacao
+		Mockito.verify(repository, Mockito.never()).save(user);		
+		});
+	}
 
 	@Test
 	@DisplayName("Deve lançar erro quando não encontrar usuario cadastrado com email informado.")
@@ -69,7 +106,6 @@ public class UsuarioServiceTest {
 			String senha = "senha";
 			Usuario usuario = Usuario.builder().email("email@email.com").senha(senha).build();
 			Mockito.when(repository.findByEmail(Mockito.anyString())).thenReturn(Optional.of(usuario));
-
 			// acao
 			service.autenticar("email@email.com", "123");
 		});
@@ -90,9 +126,7 @@ public class UsuarioServiceTest {
 	@DisplayName("Deve lançar erro quando existir email cadastrado.")
 	public void lancaErroValidarEmail() {
 		Assertions.assertThrows(RegraNegocioException.class, () -> {
-
 			Mockito.when(repository.existsByEmail(Mockito.anyString())).thenReturn(true);
-
 			service.validarEmail("email@email.com");
 		});
 
