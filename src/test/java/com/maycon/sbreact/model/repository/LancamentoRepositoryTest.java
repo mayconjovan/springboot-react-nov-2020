@@ -62,7 +62,7 @@ public class LancamentoRepositoryTest {
 		Lancamento lancamento = criaPersisteLancamento();
 		lancamento.setAno(2018);
 		lancamento.setDescricao("Teste atualizar");
-		lancamento.setStatus(StatusLancamento.CANCENLADO);
+		lancamento.setStatus(StatusLancamento.CANCELADO);
 
 		repository.save(lancamento);
 
@@ -70,7 +70,7 @@ public class LancamentoRepositoryTest {
 
 		assertThat(lancamentoAtualizado.getAno()).isEqualTo(2018);
 		assertThat(lancamentoAtualizado.getDescricao()).isEqualTo("Teste atualizar");
-		assertThat(lancamentoAtualizado.getStatus()).isEqualTo(StatusLancamento.CANCENLADO);
+		assertThat(lancamentoAtualizado.getStatus()).isEqualTo(StatusLancamento.CANCELADO);
 
 	}
 
